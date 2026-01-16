@@ -1,0 +1,7 @@
+{
+  "name": "THAKUR BALAK BRAHMACHARI AI",
+  "description": "An AI spiritual companion providing guidance on daily life problems and negative thinking based on the scientific spiritual teachings of Sri Sri Thakur Balak Brahmachari.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
