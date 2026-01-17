@@ -10,6 +10,8 @@ export interface User {
   name: string;
   isGuest: boolean;
   bio?: string;
+  sadhanaStreak: number;
+  lastVisitDate?: string;
 }
 
 export interface Message {
@@ -17,6 +19,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   groundingChunks?: any[];
+  imageUrl?: string;
 }
 
 export interface TeachingSnippet {

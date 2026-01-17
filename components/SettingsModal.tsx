@@ -1,283 +1,167 @@
 
 import React, { useState, useEffect } from 'react';
 import { Message, User } from '../types';
+import { SUGGESTED_PROMPTS } from '../constants';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   isGrayscale: boolean;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
   messages: Message[];
   user: User;
   onClearHistory: () => void;
   onLogout: () => void;
-  onUpdateUser: (updates: Partial<User>) => void;
+  onUpdateUser: (user: User) => void;
   responseStyle: 'concise' | 'detailed';
   setResponseStyle: (style: 'concise' | 'detailed') => void;
+  remindersEnabled: boolean;
+  setRemindersEnabled: (enabled: boolean) => void;
+  reminderInterval: number;
+  setReminderInterval: (interval: number) => void;
+  onTriggerManualReminder?: () => void;
+  selectedLanguage: string;
+  setSelectedLanguage: (lang: string) => void;
+  isSearchEnabled: boolean;
+  setIsSearchEnabled: (enabled: boolean) => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  isGrayscale,
-  messages,
-  user,
-  onClearHistory,
-  onLogout,
-  onUpdateUser,
-  responseStyle,
-  setResponseStyle,
-}) => {
-  const [editingName, setEditingName] = useState(user.name);
-  const [editingBio, setEditingBio] = useState(user.bio || '');
-  const [isEditing, setIsEditing] = useState(false);
+const LANGUAGES = [
+  "English", "Hindi", "Bangla", "Arabic", "Chinese", "French", 
+  "Russian", "Spanish", "Portuguese", "Swahili", "Hausa"
+];
 
-  // Sync state when user changes or modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setEditingName(user.name);
-      setEditingBio(user.bio || '');
-    }
-  }, [isOpen, user]);
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen, onClose, isGrayscale, isDarkMode, toggleDarkMode, user, onClearHistory, onLogout, onUpdateUser, 
+  responseStyle, setResponseStyle, remindersEnabled, setRemindersEnabled, 
+  reminderInterval, setReminderInterval, onTriggerManualReminder, selectedLanguage, setSelectedLanguage,
+  isSearchEnabled, setIsSearchEnabled
+}) => {
+  const [name, setName] = useState(user.name);
+  const [bio, setBio] = useState(user.bio || '');
 
   if (!isOpen) return null;
 
-  const handleSaveProfile = () => {
-    onUpdateUser({ name: editingName, bio: editingBio });
-    setIsEditing(false);
-  };
-
-  const exportHistory = () => {
-    const text = messages
-      .map((m) => `${m.role.toUpperCase()} (${m.timestamp.toLocaleString()}): ${m.text}`)
-      .join('\n\n');
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `thakur-ai-history-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-  };
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div 
-        className={`w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 transform scale-100 max-h-[90vh] flex flex-col ${
-          isGrayscale ? 'bg-white border-2 border-black' : 'bg-white'
-        }`}
-      >
-        <div className={`px-6 py-4 flex items-center justify-between border-b flex-shrink-0 ${isGrayscale ? 'border-black' : 'border-gray-100'}`}>
-          <h2 className={`font-bold text-lg ${isGrayscale ? 'text-black' : 'text-gray-800'}`}>Settings</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <i className="fa-solid fa-xmark"></i>
+      <div className={`w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col transition-colors 
+        ${isDarkMode ? 'bg-slate-900 text-slate-100 border border-slate-800' : 'bg-white text-black'}`}>
+        <div className={`px-6 py-5 flex items-center justify-between border-b flex-shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-gray-100'}`}>
+          <h2 className={`font-bold text-xl ${isDarkMode ? 'text-white' : 'text-black'}`}>Settings & Sadhan</h2>
+          <button onClick={onClose} className={`p-2 rounded-full transition-colors ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-black hover:bg-gray-100'}`}>
+            <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto scrollbar-hide">
-          {/* Profile Section */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className={`text-xs font-bold uppercase tracking-widest ${isGrayscale ? 'text-black' : 'text-orange-600'}`}>
-                Your Profile
-              </h3>
-              {!isEditing && (
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className={`text-[10px] font-bold uppercase tracking-tighter px-2 py-1 rounded transition-colors ${
-                    isGrayscale ? 'bg-black text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                  }`}
-                >
-                  Edit Profile
-                </button>
-              )}
-            </div>
-            
-            <div className={`p-4 rounded-2xl border transition-all ${isGrayscale ? 'border-black' : 'border-gray-100 bg-gray-50'}`}>
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Spiritual Name / Display Name</label>
-                    <input 
-                      type="text" 
-                      value={editingName} 
-                      onChange={(e) => setEditingName(e.target.value)}
-                      placeholder="Enter your name"
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm border focus:ring-2 focus:outline-none transition-all ${
-                        isGrayscale ? 'border-black focus:ring-black' : 'border-gray-200 focus:border-orange-500 focus:ring-orange-100'
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Your Spiritual Goal / Bio</label>
-                    <textarea 
-                      rows={2}
-                      value={editingBio} 
-                      onChange={(e) => setEditingBio(e.target.value)}
-                      placeholder="e.g., Seeking mental peace and focus..."
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm border focus:ring-2 focus:outline-none transition-all resize-none ${
-                        isGrayscale ? 'border-black focus:ring-black' : 'border-gray-200 focus:border-orange-500 focus:ring-orange-100'
-                      }`}
-                    />
-                  </div>
-                  <div className="flex space-x-2 pt-1">
-                    <button 
-                      onClick={handleSaveProfile}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                        isGrayscale ? 'bg-black text-white' : 'bg-orange-600 text-white hover:bg-orange-700'
-                      }`}
-                    >
-                      Save Profile
-                    </button>
-                    <button 
-                      onClick={() => { setIsEditing(false); setEditingName(user.name); setEditingBio(user.bio || ''); }}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        isGrayscale ? 'bg-white border border-black text-black' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start space-x-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold shadow-inner flex-shrink-0 ${
-                    isGrayscale ? 'bg-black text-white' : 'bg-orange-500 text-white'
-                  }`}>
-                    {getInitials(user.name)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-bold truncate ${isGrayscale ? 'text-black' : 'text-gray-800'}`}>{user.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate mb-2">{user.email || 'Guest Santan'}</p>
-                    {user.bio ? (
-                      <p className="text-xs text-gray-600 italic leading-relaxed line-clamp-2">"{user.bio}"</p>
-                    ) : (
-                      <p className="text-[10px] text-gray-400 italic">No spiritual goal set yet.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* History Section */}
-          <section>
-            <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 ${isGrayscale ? 'text-black' : 'text-orange-600'}`}>
-              Conversation History
-            </h3>
-            <div className="space-y-3">
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${isGrayscale ? 'border-black bg-gray-50' : 'border-gray-100 bg-gray-50'}`}>
-                <div className="text-sm">
-                  <p className="font-semibold text-gray-700">{messages.length} Messages</p>
-                  <p className="text-xs text-gray-400">Stored locally on your device</p>
-                </div>
-                <button 
-                  onClick={onClearHistory}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    isGrayscale ? 'bg-black text-white hover:bg-gray-800' : 'bg-red-50 text-red-600 hover:bg-red-100'
-                  }`}
-                >
-                  Clear All
-                </button>
-              </div>
-              <button 
-                onClick={exportHistory}
-                className={`w-full py-2.5 rounded-xl border-2 flex items-center justify-center space-x-2 text-sm font-semibold transition-all ${
-                  isGrayscale ? 'border-black hover:bg-black hover:text-white' : 'border-gray-100 hover:border-orange-200 hover:bg-orange-50 text-gray-700'
-                }`}
-              >
-                <i className="fa-solid fa-download"></i>
-                <span>Export Chat History (.txt)</span>
-              </button>
-            </div>
-          </section>
-
-          {/* Preferences Section */}
-          <section>
-            <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 ${isGrayscale ? 'text-black' : 'text-orange-600'}`}>
-              Guidance Style
-            </h3>
-            <div className={`flex p-1 rounded-xl border ${isGrayscale ? 'border-black' : 'border-gray-100 bg-gray-50'}`}>
-              <button 
-                onClick={() => setResponseStyle('concise')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  responseStyle === 'concise' 
-                    ? (isGrayscale ? 'bg-black text-white' : 'bg-white shadow-sm text-orange-600 border border-orange-100') 
-                    : 'text-gray-400'
-                }`}
-              >
-                Concise
-              </button>
-              <button 
-                onClick={() => setResponseStyle('detailed')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  responseStyle === 'detailed' 
-                    ? (isGrayscale ? 'bg-black text-white' : 'bg-white shadow-sm text-orange-600 border border-orange-100') 
-                    : 'text-gray-400'
-                }`}
-              >
-                Detailed
-              </button>
-            </div>
-          </section>
-
-          {/* Action Footer */}
-          <div className="pt-2 space-y-3">
-            <button 
-              onClick={onLogout}
-              className={`w-full py-3 rounded-2xl font-bold border-2 transition-all ${
-                isGrayscale 
-                  ? 'border-black text-black hover:bg-black hover:text-white' 
-                  : 'border-orange-100 text-orange-600 hover:bg-orange-50'
-              }`}
-            >
-              Sign Out
-            </button>
-            <button 
-              onClick={onClose}
-              className={`w-full py-3 rounded-2xl font-bold transition-all ${
-                isGrayscale 
-                  ? 'bg-black text-white hover:bg-gray-800' 
-                  : 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-100'
-              }`}
-            >
-              Close Settings
-            </button>
-          </div>
-
-          {/* Feedback & Disclaimer */}
-          <section className={`pt-4 border-t space-y-4 ${isGrayscale ? 'border-black' : 'border-gray-100'}`}>
-            <div className={`p-4 rounded-xl text-[10px] leading-relaxed ${isGrayscale ? 'bg-gray-100 border border-black text-black' : 'bg-orange-50 text-gray-600'}`}>
-                <h4 className="font-bold uppercase mb-1">AI Disclaimer</h4>
-                <p>AI can make mistakes. This tool is for spiritual reference based on Thakur's teachings and should not replace professional medical or mental health advice.</p>
-            </div>
-
-            <div className={`flex flex-col items-center space-y-3 ${isGrayscale ? 'text-black' : 'text-gray-500'}`}>
-              <div className="flex items-start space-x-3 text-[11px]">
-                <i className="fa-solid fa-comments text-lg mt-0.5"></i>
+        <div className="p-6 space-y-8 overflow-y-auto scrollbar-hide">
+          <section className="space-y-6">
+              {/* Dark Mode Toggle */}
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-bold">Share Feedback</p>
-                  <a 
-                    href="mailto:feedback@thakurai.example" 
-                    className={`font-bold underline ${isGrayscale ? 'text-black' : 'text-orange-600'}`}
-                  >
-                    help us improve
-                  </a>
+                  <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Dark Mode</p>
+                  <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Soothing for night sadhana</p>
                 </div>
+                <button 
+                  onClick={toggleDarkMode}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isDarkMode ? 'bg-orange-600' : 'bg-gray-200'}`}
+                >
+                  <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${isDarkMode ? 'translate-x-6' : ''}`}></div>
+                </button>
               </div>
-              
-              <div className="pt-4 border-t w-full flex flex-col items-center">
-                <p className={`text-[8px] font-bold tracking-[0.2em] mb-1 ${isGrayscale ? 'text-black' : 'text-orange-600'}`}>
-                   MADE WITH ❤️️ BY ARPAN PAUL
-                </p>
-                <p className="text-[7px] opacity-60 font-medium">
-                  ( RAM NARAYAN RAM GLOBAL )
-                </p>
+
+             <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Search Grounding</p>
+                  <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Fetch latest spiritual context</p>
+                </div>
+                <button 
+                  onClick={() => setIsSearchEnabled(!isSearchEnabled)}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isSearchEnabled ? (isDarkMode ? 'bg-white' : 'bg-black') : 'bg-gray-200'}`}
+                >
+                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full transition-transform duration-200 ${isSearchEnabled ? 'translate-x-6' : ''} ${isDarkMode && isSearchEnabled ? 'bg-slate-900' : 'bg-white'}`}></div>
+                </button>
               </div>
+
+              <div className={`flex flex-col space-y-4 pt-2 border-t ${isDarkMode ? 'border-slate-800' : 'border-gray-50'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Rama-Nama Nudge</p>
+                    <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Regular vibrational checks</p>
+                  </div>
+                  <button 
+                    onClick={() => setRemindersEnabled(!remindersEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${remindersEnabled ? (isDarkMode ? 'bg-white' : 'bg-black') : 'bg-gray-200'}`}
+                  >
+                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full transition-transform duration-200 ${remindersEnabled ? 'translate-x-6' : ''} ${isDarkMode && remindersEnabled ? 'bg-slate-900' : 'bg-white'}`}></div>
+                  </button>
+                </div>
+
+                {remindersEnabled && (
+                  <div className="animate-fade-in space-y-4">
+                    <div>
+                      <label className={`block text-xs font-bold uppercase tracking-widest mb-2 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Reminder Interval (Minutes)</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="1440"
+                        value={reminderInterval}
+                        onChange={(e) => setReminderInterval(parseInt(e.target.value) || 1)}
+                        className={`w-full px-4 py-2 rounded-xl text-sm font-bold border outline-none transition-all ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-white' : 'bg-gray-50 border-gray-100 text-black focus:border-black'}`}
+                      />
+                    </div>
+                    <button 
+                      onClick={onTriggerManualReminder}
+                      className={`w-full py-3 rounded-xl border-2 border-dashed font-bold text-xs uppercase tracking-widest transition-colors ${isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-orange-200 text-orange-600 hover:bg-orange-50'}`}
+                    >
+                      Trigger Manual Reminder
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className={`block text-sm font-bold uppercase tracking-widest mb-3 ${isDarkMode ? 'text-slate-400' : 'text-black'}`}>Primary Language</label>
+                <select 
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl text-base font-bold border outline-none transition-all ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-white' : 'bg-gray-50 border-gray-100 text-black focus:border-black'}`}
+                >
+                  {LANGUAGES.map(lang => <option key={lang} value={lang} className={isDarkMode ? 'bg-slate-800' : ''}>{lang}</option>)}
+                </select>
+              </div>
+          </section>
+
+          <section className="space-y-4">
+            <button 
+              onClick={() => window.location.href = 'mailto:arpanpaul335@gmail.com'}
+              className={`w-full py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center space-x-2 ${isDarkMode ? 'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+            >
+              <i className="fa-solid fa-comment-dots"></i>
+              <span>Share Your Feedback</span>
+            </button>
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => { if(confirm("Clear Archive?")) onClearHistory(); onClose(); }} 
+                className="flex-1 py-3.5 border border-red-100 text-red-600 hover:bg-red-50 rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors"
+              >
+                Clear History
+              </button>
+              <button 
+                onClick={onLogout} 
+                className={`flex-1 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors ${isDarkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-gray-50 text-black hover:bg-gray-100'}`}
+              >
+                Sign Out
+              </button>
             </div>
           </section>
+
+          <button 
+            onClick={onClose} 
+            className="w-full py-4 bg-orange-600 text-white hover:bg-orange-700 rounded-2xl font-bold text-base uppercase tracking-widest shadow-lg transition-all"
+          >
+            Return to Sadhana
+          </button>
         </div>
       </div>
     </div>
