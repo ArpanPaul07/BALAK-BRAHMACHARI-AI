@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +29,7 @@
     </style>
     <script>
         // Polyfill for process.env to support Gemini SDK in the browser
-        window.process = window.process || { env: {} };
+        window.process = window.process || { env: { API_KEY: "" } };
     </script>
 <script type="importmap">
 {
