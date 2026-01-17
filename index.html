@@ -2,17 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>THAKUR BALAK BRAHMACHARI AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
+        :root {
+            --header-height: 64px;
+            --input-height: 140px;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+            background-color: #020617;
+            overscroll-behavior-y: none;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            position: fixed;
         }
         
         .scrollbar-hide::-webkit-scrollbar {
@@ -24,21 +33,23 @@
         }
 
         @keyframes fade-in {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .animate-fade-in {
-            animation: fade-in 0.25s ease-out forwards;
+            animation: fade-in 0.2s ease-out forwards;
         }
 
-        /* Fix for mobile keyboard push-up */
-        .safe-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
+        /* Prevent layout shift during keyboard appearance */
+        .app-container {
+            height: 100dvh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
     </style>
     <script>
-        // Polyfill for process.env to support Gemini SDK in the browser
         window.process = window.process || { env: { API_KEY: "" } };
     </script>
 <script type="importmap">
@@ -52,7 +63,7 @@
 }
 </script>
 </head>
-<body class="overflow-hidden">
+<body>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

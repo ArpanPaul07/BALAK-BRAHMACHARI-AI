@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Message, Role, User } from './types';
 import { chatWithGemini } from './services/geminiService';
 import Header from './components/Header';
@@ -15,33 +15,58 @@ const INITIAL_MESSAGE: Message = {
 
 const App: React.FC = () => {
   const [isGrayscale, setIsGrayscale] = useState(() => localStorage.getItem('grayscale_mode') === 'true');
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('dark_mode') === 'true');
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('dark_mode') !== 'false'); // Default to dark
   
+  // Initialize user with streak logic handled immediately to prevent double-render flicker
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('thakur_user_session');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    
+    const parsedUser: User = JSON.parse(saved);
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Update streak if it's a new day
+    if (parsedUser.lastVisitDate !== today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      let newStreak = parsedUser.sadhanaStreak || 0;
+      if (parsedUser.lastVisitDate === yesterdayStr) {
+        newStreak += 1;
+      } else {
+        newStreak = 1; 
+      }
+      
+      const updated = { ...parsedUser, sadhanaStreak: newStreak, lastVisitDate: today };
+      localStorage.setItem('thakur_user_session', JSON.stringify(updated));
+      return updated;
+    }
+    
+    return parsedUser;
   });
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSearchEnabled, setIsSearchEnabled] = useState(() => localStorage.getItem('search_enabled') === 'true');
   const [selectedLanguage, setSelectedLanguage] = useState(() => localStorage.getItem('selected_language') || 'English');
-  
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const [isBreathing, setIsBreathing] = useState(false);
-  const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale');
   const [showBani, setShowBani] = useState(false);
   const [currentBani, setCurrentBani] = useState({ title: '', content: '' });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Smooth scroll specifically for new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+    if (messages.length > 1 || isLoading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length, isLoading]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,22 +82,25 @@ const App: React.FC = () => {
     
     const userMessage: Message = { 
       role: Role.USER, 
-      text: text || "Analyze this, Master.", 
+      text: text || "Analyze this environment, Master.", 
       timestamp: new Date(),
       imageUrl: attachedImage || undefined
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    // Update messages locally first
+    const updatedHistory = [...messages, userMessage];
+    setMessages(updatedHistory);
     setInput('');
     setAttachedImage(null);
     setIsLoading(true);
     
+    // Add placeholder for AI response
     const aiMessagePlaceholder: Message = { role: Role.MODEL, text: '', timestamp: new Date() };
     setMessages(prev => [...prev, aiMessagePlaceholder]);
     
     try {
       let fullResponseText = "";
-      await chatWithGemini([...messages, userMessage], isSearchEnabled, selectedLanguage, (chunk, grounding) => {
+      await chatWithGemini(updatedHistory, isSearchEnabled, selectedLanguage, (chunk, grounding) => {
         fullResponseText += chunk;
         setMessages(prev => {
           const updated = [...prev];
@@ -89,7 +117,7 @@ const App: React.FC = () => {
         const updated = [...prev];
         const lastMsg = updated[updated.length - 1];
         if (lastMsg && lastMsg.role === Role.MODEL) {
-          lastMsg.text = "Ram Narayan Ram. Connectivity with the cosmic grid is low. Try again. Ram Narayan Ram.";
+          lastMsg.text = "Ram Narayan Ram. Connectivity with the cosmic grid is low. Please check your network or try again. Ram Narayan Ram.";
         }
         return updated;
       });
@@ -100,40 +128,45 @@ const App: React.FC = () => {
 
   if (!user) return <Auth onAuth={setUser} isGrayscale={isGrayscale} isDarkMode={isDarkMode} />;
 
+  const userRoleTitle = user.sadhanaStreak >= 7 ? 'Sevak' : 'Santan';
+
   return (
-    <div className={`flex flex-col h-screen transition-all duration-500 fixed inset-0
+    <div className={`app-container transition-opacity duration-300
       ${isGrayscale ? 'grayscale bg-white' : ''} 
       ${isDarkMode ? 'bg-[#020617] text-slate-100' : 'bg-gray-50 text-gray-900'}
     `}>
       <Header 
-        isGrayscale={isGrayscale} 
-        isDarkMode={isDarkMode}
-        toggleGrayscale={() => setIsGrayscale(!isGrayscale)} 
+        isGrayscale={isGrayscale} isDarkMode={isDarkMode}
+        toggleGrayscale={() => {
+            const val = !isGrayscale;
+            setIsGrayscale(val);
+            localStorage.setItem('grayscale_mode', val.toString());
+        }} 
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onLogout={() => setUser(null)}
+        onLogout={() => { if(confirm("Sign out?")) setUser(null); }}
         onOpenBani={() => {
           const keys = Object.keys(TEACHINGS);
           const r = keys[Math.floor(Math.random() * keys.length)];
           setCurrentBani({ title: r, content: TEACHINGS[r] });
           setShowBani(true);
         }}
-        userTitle={user.sadhanaStreak >= 7 ? 'Sevak' : 'Santan'}
+        userTitle={userRoleTitle}
       />
 
-      <main className="flex-1 overflow-y-auto pt-2 pb-48 px-4 scrollbar-hide">
-        <div className="max-w-3xl mx-auto py-4">
+      <main className="flex-1 overflow-y-auto pt-2 pb-4 px-4 scrollbar-hide overscroll-none">
+        <div className="max-w-3xl mx-auto py-2">
           {messages.map((msg, index) => (
-            <ChatBubble key={index} message={msg} language={selectedLanguage} isDarkMode={isDarkMode} />
+            <ChatBubble key={`${index}-${msg.timestamp.getTime()}`} message={msg} language={selectedLanguage} isDarkMode={isDarkMode} />
           ))}
           {isLoading && <div className="flex justify-start mb-6"><div className={`w-12 h-6 rounded-full animate-pulse ${isDarkMode ? 'bg-slate-800' : 'bg-gray-200'}`}></div></div>}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-40" />
         </div>
       </main>
 
-      {/* Input Section - Optimized for Mobile Thumb Reach */}
-      <div className={`fixed bottom-0 left-0 right-0 border-t z-40 safe-bottom transition-colors 
+      {/* Input Bar - Fixed position with safe area support */}
+      <div className={`fixed bottom-0 left-0 right-0 border-t z-40 transition-colors 
         ${isDarkMode ? 'bg-[#020617]/95 backdrop-blur-md border-slate-800' : 'bg-white/95 backdrop-blur-md border-gray-200'}
-        ${isGrayscale ? 'bg-white border-black' : ''}
+        pb-[env(safe-area-inset-bottom,1.5rem)]
       `}>
         <div className="max-w-3xl mx-auto p-3 sm:p-4">
           {attachedImage && (
@@ -150,33 +183,33 @@ const App: React.FC = () => {
               rows={1} 
               value={input} 
               onChange={(e) => setInput(e.target.value)} 
+              onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Ask for guidance..." 
               className={`flex-1 p-4 sm:p-5 bg-transparent border-none focus:ring-0 resize-none max-h-32 text-base ${isDarkMode ? 'text-slate-100 placeholder:text-slate-500' : 'text-gray-700 placeholder:text-gray-400'}`} 
             />
             
             <div className="flex items-center justify-between p-2 px-4 sm:p-0 sm:pr-4 sm:pb-3 sm:justify-end">
-              {/* Feature distance increased for mobile - space-x-4 */}
-              <div className="flex items-center space-x-4 sm:space-x-2">
-                <button onClick={() => fileInputRef.current?.click()} className={`w-10 h-10 flex items-center justify-center rounded-xl ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                  <i className="fa-solid fa-camera"></i>
+              <div className="flex items-center space-x-5 sm:space-x-2">
+                <button onClick={() => fileInputRef.current?.click()} className={`w-11 h-11 flex items-center justify-center rounded-xl ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                  <i className="fa-solid fa-camera text-lg"></i>
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
                 
-                <button onClick={() => setIsBreathing(true)} className={`w-10 h-10 flex items-center justify-center rounded-xl ${isDarkMode ? 'bg-orange-950/30 text-orange-500' : 'bg-orange-50 text-orange-600'}`}>
-                  <i className="fa-solid fa-leaf"></i>
+                <button onClick={() => setIsBreathing(true)} className={`w-11 h-11 flex items-center justify-center rounded-xl ${isDarkMode ? 'bg-orange-950/30 text-orange-500' : 'bg-orange-50 text-orange-600'}`}>
+                  <i className="fa-solid fa-leaf text-lg"></i>
                 </button>
                 
-                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} className={`w-10 h-10 flex items-center justify-center rounded-xl ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}>
-                  <i className="fa-solid fa-globe"></i>
+                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} className={`w-11 h-11 flex items-center justify-center rounded-xl ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}>
+                  <i className="fa-solid fa-globe text-lg"></i>
                 </button>
               </div>
 
               <button 
                 onClick={() => handleSend()} 
                 disabled={isLoading} 
-                className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all ml-4 sm:ml-3 ${isLoading ? 'bg-slate-800' : 'bg-orange-600 text-white hover:scale-105 active:scale-95 shadow-lg shadow-orange-600/20'}`}
+                className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ml-4 sm:ml-3 ${isLoading ? 'bg-slate-800' : 'bg-orange-600 text-white hover:scale-105 active:scale-95 shadow-lg shadow-orange-600/20'}`}
               >
-                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrow-up text-lg"></i>}
+                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrow-up text-xl"></i>}
               </button>
             </div>
           </div>
@@ -217,14 +250,25 @@ const App: React.FC = () => {
 
       <SettingsModal 
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
-        isGrayscale={isGrayscale} isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        isGrayscale={isGrayscale} isDarkMode={isDarkMode} 
+        toggleDarkMode={() => {
+            const val = !isDarkMode;
+            setIsDarkMode(val);
+            localStorage.setItem('dark_mode', val.toString());
+        }}
         messages={messages} user={user} onClearHistory={() => setMessages([INITIAL_MESSAGE])}
         onLogout={() => setUser(null)} onUpdateUser={setUser}
         responseStyle="detailed" setResponseStyle={() => {}}
         remindersEnabled={false} setRemindersEnabled={() => {}}
         reminderInterval={15} setReminderInterval={() => {}}
-        selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage}
-        isSearchEnabled={isSearchEnabled} setIsSearchEnabled={setIsSearchEnabled}
+        selectedLanguage={selectedLanguage} setSelectedLanguage={(l) => {
+            setSelectedLanguage(l);
+            localStorage.setItem('selected_language', l);
+        }}
+        isSearchEnabled={isSearchEnabled} setIsSearchEnabled={(v) => {
+            setIsSearchEnabled(v);
+            localStorage.setItem('search_enabled', v.toString());
+        }}
       />
     </div>
   );
