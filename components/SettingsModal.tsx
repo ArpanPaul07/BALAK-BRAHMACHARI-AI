@@ -16,8 +16,6 @@ interface SettingsModalProps {
   onClearHistory: () => void;
   onLogout: () => void;
   onUpdateUser: (user: User) => void;
-  responseStyle: 'concise' | 'detailed';
-  setResponseStyle: (style: 'concise' | 'detailed') => void;
   remindersEnabled: boolean;
   setRemindersEnabled: (enabled: boolean) => void;
   reminderInterval: number;
@@ -27,6 +25,7 @@ interface SettingsModalProps {
   setSelectedLanguage: (lang: string) => void;
   isSearchEnabled: boolean;
   setIsSearchEnabled: (enabled: boolean) => void;
+  onTriggerKeySelection: () => void;
 }
 
 const LANGUAGES = [
@@ -40,7 +39,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   user, onClearHistory, onLogout, onUpdateUser, 
   selectedLanguage, setSelectedLanguage,
   isSearchEnabled, setIsSearchEnabled,
-  remindersEnabled, setRemindersEnabled, reminderInterval, setReminderInterval, onTriggerManualReminder
+  remindersEnabled, setRemindersEnabled, reminderInterval, setReminderInterval, onTriggerManualReminder,
+  onTriggerKeySelection
 }) => {
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || '');
@@ -98,6 +98,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 >
                   Save Profile Context
                 </button>
+              </div>
+
+              {/* API Key / Billing Section */}
+              <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-orange-950/10 border-orange-900/30' : 'bg-orange-50 border-orange-100'}`}>
+                <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-orange-600 mb-3`}>Billing & Pro Features</h3>
+                <p className={`text-xs mb-4 opacity-70 leading-relaxed font-medium`}>
+                  Access "Pro Vibration" (Gemini 3 Pro) for deeper spiritual reasoning. Requires a paid API key from Google Cloud.
+                </p>
+                <div className="flex flex-col space-y-2">
+                  <button 
+                    onClick={onTriggerKeySelection}
+                    className="flex items-center justify-center space-x-2 w-full py-3 bg-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 active:scale-95 transition-all"
+                  >
+                    <i className="fa-solid fa-key"></i>
+                    <span>Connect Master Key</span>
+                  </button>
+                  <a 
+                    href="https://ai.google.dev/gemini-api/docs/billing" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-center py-2 text-[10px] font-bold text-orange-600 hover:underline"
+                  >
+                    Billing Documentation <i className="fa-solid fa-external-link text-[8px] ml-1"></i>
+                  </a>
+                </div>
               </div>
 
               {/* Voice Assistant Toggle */}
@@ -158,20 +183,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
               </div>
 
-              {/* Fast Responses Toggle */}
+              {/* Vibration Mode Toggle */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-800">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Fast AI Responses</p>
-                    <i className="fa-solid fa-bolt text-blue-400 text-xs"></i>
+                    <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Vibration Fidelity</p>
+                    <i className={`fa-solid ${isFastMode ? 'fa-bolt text-blue-400' : 'fa-crown text-orange-500'} text-xs`}></i>
                   </div>
-                  <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Low-latency Flash model</p>
+                  <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                    {isFastMode ? 'Flash Mode (Fast)' : 'Pro Mode (Deep)'}
+                  </p>
                 </div>
                 <button 
-                  onClick={() => setIsFastMode(!isFastMode)}
-                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isFastMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+                  onClick={() => {
+                    const nextMode = !isFastMode;
+                    setIsFastMode(nextMode);
+                    localStorage.setItem('fast_mode', nextMode.toString());
+                  }}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isFastMode ? 'bg-blue-600' : 'bg-orange-600'}`}
                 >
-                  <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${isFastMode ? 'translate-x-6' : ''}`}></div>
+                  <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${!isFastMode ? 'translate-x-6' : ''}`}></div>
                 </button>
               </div>
 

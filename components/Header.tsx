@@ -8,6 +8,7 @@ interface HeaderProps {
   onLogout: () => void;
   onOpenBani: () => void;
   onOpenWorkspace: () => void;
+  onCopyLink: () => void;
   userTitle: string;
 }
 
@@ -19,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({
   onLogout, 
   onOpenBani, 
   onOpenWorkspace,
+  onCopyLink,
   userTitle 
 }) => {
   return (
@@ -32,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <h1 className={`font-black text-[10px] sm:text-base leading-tight uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-black'}`}>
-              THAKUR BALAK BRAHMACHARI AI
+              THAKUR BALAK BRAHMACHARI
             </h1>
             <div className="flex items-center space-x-1">
               <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded-md ${isDarkMode ? 'bg-orange-950 text-orange-500' : 'bg-orange-100 text-orange-700'}`}>
@@ -44,23 +46,27 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-1">
+          <button onClick={onCopyLink} title="Copy App Link" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500 hover:text-orange-600'}`}>
+            <i className="fa-solid fa-share-nodes text-xs sm:text-sm"></i>
+          </button>
+
           <button onClick={onOpenWorkspace} title="Workspace" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500 hover:text-orange-600'}`}>
             <i className="fa-solid fa-layer-group text-xs sm:text-sm"></i>
           </button>
 
-          <button onClick={onOpenBani} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+          <button onClick={onOpenBani} title="Daily Tattwa" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
             <i className="fa-solid fa-sun text-xs sm:text-sm"></i>
           </button>
           
-          <button onClick={toggleGrayscale} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+          <button onClick={toggleGrayscale} title="Grayscale Mode" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
             <i className="fa-solid fa-circle-half-stroke text-xs sm:text-sm"></i>
           </button>
           
-          <button onClick={onOpenSettings} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+          <button onClick={onOpenSettings} title="Settings" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
             <i className="fa-solid fa-gear text-xs sm:text-sm"></i>
           </button>
 
-          <button onClick={onLogout} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-500">
+          <button onClick={onLogout} title="Sign Out" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-500">
             <i className="fa-solid fa-right-from-bracket text-xs sm:text-sm"></i>
           </button>
         </div>

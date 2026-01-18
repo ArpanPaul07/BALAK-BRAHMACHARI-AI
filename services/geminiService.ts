@@ -51,8 +51,9 @@ export const chatWithGemini = async (
   onChunk: (chunk: string, grounding?: any[]) => void,
   isFastMode: boolean = true
 ) => {
+  // Use a fresh instance to ensure up-to-date API key from the selection dialog if needed
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const modelName = isFastMode ? 'gemini-flash-lite-latest' : 'gemini-3-pro-preview';
+  const modelName = isFastMode ? 'gemini-3-flash-preview' : 'gemini-3-pro-preview';
   
   const contents = history.map(msg => {
     const parts: any[] = [{ text: msg.text }];

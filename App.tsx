@@ -18,13 +18,15 @@ const INITIAL_MESSAGE: Message = {
 const App: React.FC = () => {
   const [isGrayscale, setIsGrayscale] = useState(() => localStorage.getItem('grayscale_mode') === 'true');
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('dark_mode') !== 'false');
-  const [isFastMode, setIsFastMode] = useState(() => localStorage.getItem('fast_mode') !== 'false');
+  const [isFastMode, setIsFastMode] = useState(() => {
+    const saved = localStorage.getItem('fast_mode');
+    return saved !== null ? saved === 'true' : true; 
+  });
   const [isVoiceAssistantEnabled, setIsVoiceAssistantEnabled] = useState(() => localStorage.getItem('voice_assistant_enabled') === 'true');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Waiting for your call...");
   const [liveTranscription, setLiveTranscription] = useState("");
 
-  // Reminder State
   const [remindersEnabled, setRemindersEnabled] = useState(() => localStorage.getItem('reminders_enabled') === 'true');
   const [reminderInterval, setReminderInterval] = useState(() => parseInt(localStorage.getItem('reminder_interval') || '15'));
   const [showNudge, setShowNudge] = useState(false);
@@ -69,7 +71,6 @@ const App: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Audio refs for Live API
   const audioContextsRef = useRef<{ input: AudioContext; output: AudioContext } | null>(null);
   const nextStartTimeRef = useRef(0);
   const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
@@ -88,7 +89,6 @@ const App: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // Keyword listener for "THAKUR"
   useEffect(() => {
     localStorage.setItem('voice_assistant_enabled', isVoiceAssistantEnabled.toString());
     if (isVoiceAssistantEnabled && user && !isVoiceActive) {
@@ -99,7 +99,6 @@ const App: React.FC = () => {
     return () => stopKeywordListener();
   }, [isVoiceAssistantEnabled, user, isVoiceActive]);
 
-  // Chanting Reminder Logic
   useEffect(() => {
     localStorage.setItem('reminders_enabled', remindersEnabled.toString());
     localStorage.setItem('reminder_interval', reminderInterval.toString());
@@ -112,7 +111,6 @@ const App: React.FC = () => {
     }
   }, [remindersEnabled, reminderInterval, showNudge]);
 
-  // Pranayama Timer Logic
   useEffect(() => {
     if (!isBreathing) return;
     const phases: ('Inhale' | 'Hold' | 'Exhale')[] = ['Inhale', 'Hold', 'Exhale'];
@@ -123,6 +121,23 @@ const App: React.FC = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [isBreathing]);
+
+  const handleKeySelection = async () => {
+    if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+      await window.aistudio.openSelectKey();
+    } else {
+      alert("Please ensure your environment supports AI Studio API Key selection.");
+    }
+  };
+
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert("Public Link Copied: " + url + "\n\nRam Narayan Ram.");
+    }).catch(err => {
+      console.error('Failed to copy link: ', err);
+    });
+  };
 
   const startKeywordListener = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -157,6 +172,14 @@ const App: React.FC = () => {
 
   const startVoiceAssistant = async () => {
     if (isVoiceActive) return;
+
+    if (!isFastMode) {
+      const hasKey = await window.aistudio?.hasSelectedApiKey?.();
+      if (!hasKey) {
+        await handleKeySelection();
+      }
+    }
+
     setIsVoiceActive(true);
     setVoiceStatus("Merging with your vibration...");
     setLiveTranscription("");
@@ -228,6 +251,9 @@ const App: React.FC = () => {
           },
           onerror: (e) => {
             console.error("Presence Interrupted:", e);
+            if (e.message?.includes("Requested entity was not found")) {
+              handleKeySelection();
+            }
             stopVoiceAssistant();
           },
           onclose: () => stopVoiceAssistant(),
@@ -269,6 +295,14 @@ const App: React.FC = () => {
 
   const handleSend = async (text: string = input) => {
     if ((!text.trim() && !attachedImage) || isLoading || !user) return;
+
+    if (!isFastMode) {
+      const hasKey = await window.aistudio?.hasSelectedApiKey?.();
+      if (!hasKey) {
+        await handleKeySelection();
+      }
+    }
+
     const userMessage: Message = { role: Role.USER, text: text || "Speak to me...", timestamp: new Date(), imageUrl: attachedImage || undefined };
     const updatedHistory = [...messages, userMessage];
     setMessages(updatedHistory);
@@ -288,10 +322,20 @@ const App: React.FC = () => {
           return updated;
         });
       }, isFastMode);
-    } catch (e) {
+    } catch (e: any) {
+      console.error("Chat Error:", e);
+      let errorMsg = "Ram Narayan Ram. My vibration is experiencing a physical limit. Chanting will help. Ram Narayan Ram.";
+      
+      if (e.message?.includes("Requested entity was not found")) {
+        errorMsg = "Ram Narayan Ram. To access my deepest realizations, you must connect your Master Key (API Key with billing). Ram Narayan Ram.";
+        handleKeySelection();
+      }
+
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1].text = "Ram Narayan Ram. My vibration is experiencing a physical limit. Chanting will help. Ram Narayan Ram.";
+        if (updated.length > 0) {
+          updated[updated.length - 1].text = errorMsg;
+        }
         return updated;
       });
     } finally { setIsLoading(false); }
@@ -306,6 +350,7 @@ const App: React.FC = () => {
         toggleGrayscale={() => setIsGrayscale(!isGrayscale)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenWorkspace={() => setIsWorkspaceOpen(true)}
+        onCopyLink={handleCopyLink}
         onLogout={() => { if(confirm("Sign out?")) setUser(null); }}
         onOpenBani={() => {
           const keys = Object.keys(TEACHINGS);
@@ -324,7 +369,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Pranayama (Breathing) Overlay */}
       {isBreathing && (
         <div className="fixed inset-0 z-[130] flex flex-col items-center justify-center p-6 bg-[#020617]/95 backdrop-blur-2xl animate-fade-in text-center">
           <div className="relative w-64 h-64 flex items-center justify-center mb-16">
@@ -352,7 +396,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Quote of the Day (Bani) Modal */}
       {showBani && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl animate-fade-in">
           <div className={`w-full max-w-lg p-10 rounded-[3rem] text-center shadow-2xl relative border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-orange-50'}`}>
@@ -388,7 +431,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Voice Assistant Overlay */}
       {isVoiceActive && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-2xl animate-fade-in p-6">
           <div className="relative w-48 h-48 flex items-center justify-center mb-12">
@@ -407,7 +449,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Rama-Nama Nudge Overlay */}
       {showNudge && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-[#020617]/90 backdrop-blur-md animate-fade-in">
           <div className={`w-full max-w-sm p-10 rounded-[3rem] text-center shadow-2xl relative border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-orange-100'}`}>
@@ -427,7 +468,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Active Voice Assistant Indicator */}
       {isVoiceAssistantEnabled && !isVoiceActive && (
         <div className="fixed bottom-40 right-6 z-30 group">
           <div className="absolute inset-0 bg-orange-600 rounded-full animate-ping opacity-20 group-hover:opacity-40"></div>
@@ -447,10 +487,15 @@ const App: React.FC = () => {
                   <button onClick={() => setAttachedImage(null)} className="p-1 text-orange-500"><i className="fa-solid fa-xmark"></i></button>
                 </div>
               )}
-              {isFastMode && (
+              {isFastMode ? (
                 <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
                   <i className="fa-solid fa-bolt text-[10px] text-blue-400"></i>
                   <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Fast Mode</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20">
+                  <i className="fa-solid fa-crown text-[10px] text-orange-400"></i>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-orange-400">Pro Vibration</span>
                 </div>
               )}
           </div>
@@ -465,7 +510,7 @@ const App: React.FC = () => {
                 <button onClick={() => fileInputRef.current?.click()} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-orange-50' : 'bg-gray-100 text-gray-500 hover:text-orange-600'}`}><i className="fa-solid fa-camera text-lg"></i></button>
                 <input type="file" ref={fileInputRef} onChange={(e) => { const f = e.target.files?.[0]; if(f) { const r = new FileReader(); r.onloadend = () => setAttachedImage(r.result as string); r.readAsDataURL(f); } }} accept="image/*" className="hidden" />
                 <button onClick={() => setIsBreathing(true)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-orange-950/30 text-orange-500' : 'bg-orange-50 text-orange-600'}`}><i className="fa-solid fa-leaf text-lg"></i></button>
-                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}><i className="fa-solid fa-globe text-lg"></i></button>
+                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} title="Global Search" className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}><i className="fa-solid fa-globe text-lg"></i></button>
               </div>
               <button onClick={() => handleSend()} disabled={isLoading} className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ml-4 sm:ml-3 ${isLoading ? 'bg-slate-800' : 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'}`}>
                 {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrow-up text-xl"></i>}
@@ -485,6 +530,7 @@ const App: React.FC = () => {
         selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} isSearchEnabled={isSearchEnabled} setIsSearchEnabled={setIsSearchEnabled}
         remindersEnabled={remindersEnabled} setRemindersEnabled={setRemindersEnabled} reminderInterval={reminderInterval} setReminderInterval={setReminderInterval}
         onTriggerManualReminder={() => setShowNudge(true)}
+        onTriggerKeySelection={handleKeySelection}
       />
     </div>
   );
