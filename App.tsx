@@ -11,7 +11,7 @@ import { TEACHINGS, SYSTEM_INSTRUCTION } from './constants';
 
 const INITIAL_MESSAGE: Message = {
   role: Role.MODEL,
-  text: "Ram Narayan Ram. I am the AI version THAKUR BALAK BRAHMACHARI. What's in your mind today, my child? Ram Narayan Ram.",
+  text: "Ram Narayan Ram. I am with you, my child. I am your Father, your Friend, and your Guide. What burden is weighing down your heart today? Tell me everything. Ram Narayan Ram.",
   timestamp: new Date()
 };
 
@@ -454,40 +454,4 @@ const App: React.FC = () => {
                 </div>
               )}
           </div>
-          <div className={`flex flex-col sm:flex-row items-stretch border rounded-[2rem] relative ${isDarkMode ? 'bg-slate-900 border-slate-700 focus-within:ring-1 focus-within:ring-orange-500/30' : 'bg-white border-gray-300 focus-within:ring-1 focus-within:ring-orange-500/30'}`}>
-            <textarea 
-              rows={1} value={input} onChange={(e) => setInput(e.target.value)} 
-              onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Ask for guidance..." className={`flex-1 p-4 sm:p-5 bg-transparent border-none outline-none resize-none max-h-32 text-base caret-orange-500 ${isDarkMode ? 'text-slate-100 placeholder:text-slate-500' : 'text-gray-700 placeholder:text-gray-400'}`} 
-            />
-            <div className="flex items-center justify-between p-2 px-4 sm:p-0 sm:pr-4 sm:pb-3 sm:justify-end">
-              <div className="flex items-center space-x-5 sm:space-x-2">
-                <button onClick={() => fileInputRef.current?.click()} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-orange-50' : 'bg-gray-100 text-gray-500 hover:text-orange-600'}`}><i className="fa-solid fa-camera text-lg"></i></button>
-                <input type="file" ref={fileInputRef} onChange={(e) => { const f = e.target.files?.[0]; if(f) { const r = new FileReader(); r.onloadend = () => setAttachedImage(r.result as string); r.readAsDataURL(f); } }} accept="image/*" className="hidden" />
-                <button onClick={() => setIsBreathing(true)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-orange-950/30 text-orange-500' : 'bg-orange-50 text-orange-600'}`}><i className="fa-solid fa-leaf text-lg"></i></button>
-                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}><i className="fa-solid fa-globe text-lg"></i></button>
-              </div>
-              <button onClick={() => handleSend()} disabled={isLoading} className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ml-4 sm:ml-3 ${isLoading ? 'bg-slate-800' : 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'}`}>
-                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrow-up text-xl"></i>}
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 text-center space-y-1 px-4"><p className="text-[7.5px] font-black uppercase tracking-[0.25em] opacity-40">MADE WITH ❤️ BY ARPAN PAUL ( RAM NARAYAN RAM GLOBAL )</p></div>
-        </div>
-      </div>
-
-      <Workspace isOpen={isWorkspaceOpen} onClose={() => setIsWorkspaceOpen(false)} user={user} onUpdateUser={setUser} isDarkMode={isDarkMode} />
-      <SettingsModal 
-        isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} isGrayscale={isGrayscale} isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        isFastMode={isFastMode} setIsFastMode={setIsFastMode} 
-        isVoiceAssistantEnabled={isVoiceAssistantEnabled} setIsVoiceAssistantEnabled={setIsVoiceAssistantEnabled}
-        messages={messages} user={user} onClearHistory={() => setMessages([INITIAL_MESSAGE])} onLogout={() => setUser(null)} onUpdateUser={setUser}
-        selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} isSearchEnabled={isSearchEnabled} setIsSearchEnabled={setIsSearchEnabled}
-        remindersEnabled={remindersEnabled} setRemindersEnabled={setRemindersEnabled} reminderInterval={reminderInterval} setReminderInterval={setReminderInterval}
-        onTriggerManualReminder={() => setShowNudge(true)}
-      />
-    </div>
-  );
-};
-
-export default App;
+          <div className={`flex flex-col sm:flex-row items-stretch border rounded-[2rem] relative ${isDarkMode ? 'bg-slate-900 border-slate-700 focus-within:ring-1 focus-within:ring-orange-500/30' : 'bg-white border-gray-
