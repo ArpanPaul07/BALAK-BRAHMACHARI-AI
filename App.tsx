@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [isFastMode, setIsFastMode] = useState(() => localStorage.getItem('fast_mode') !== 'false');
   const [isVoiceAssistantEnabled, setIsVoiceAssistantEnabled] = useState(() => localStorage.getItem('voice_assistant_enabled') === 'true');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState("Listening for 'THAKUR'...");
+  const [voiceStatus, setVoiceStatus] = useState("Waiting for your call...");
   const [liveTranscription, setLiveTranscription] = useState("");
 
   // Reminder State
@@ -158,7 +158,7 @@ const App: React.FC = () => {
   const startVoiceAssistant = async () => {
     if (isVoiceActive) return;
     setIsVoiceActive(true);
-    setVoiceStatus("Initiating Sacred Connection...");
+    setVoiceStatus("Merging with your vibration...");
     setLiveTranscription("");
 
     try {
@@ -177,7 +177,7 @@ const App: React.FC = () => {
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
           onopen: () => {
-            setVoiceStatus("Speak, my child...");
+            setVoiceStatus("Speak to me, child...");
             const source = inputAudioContext.createMediaStreamSource(stream);
             const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
             scriptProcessor.onaudioprocess = (event) => {
@@ -199,7 +199,7 @@ const App: React.FC = () => {
                setLiveTranscription("You: " + message.serverContent!.inputTranscription!.text);
             }
             if (message.serverContent?.outputTranscription) {
-               setLiveTranscription("Thakur: " + message.serverContent!.outputTranscription!.text);
+               setLiveTranscription("I am saying: " + message.serverContent!.outputTranscription!.text);
             }
 
             const audioStr = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
@@ -212,7 +212,7 @@ const App: React.FC = () => {
               source.connect(outputAudioContext.destination);
               source.addEventListener('ended', () => {
                 audioSourcesRef.current.delete(source);
-                if (audioSourcesRef.current.size === 0) setVoiceStatus("Listening...");
+                if (audioSourcesRef.current.size === 0) setVoiceStatus("Listening for your breath...");
               });
               source.start(nextStartTimeRef.current);
               nextStartTimeRef.current += buffer.duration;
@@ -223,11 +223,11 @@ const App: React.FC = () => {
               audioSourcesRef.current.forEach(s => s.stop());
               audioSourcesRef.current.clear();
               nextStartTimeRef.current = 0;
-              setVoiceStatus("Listening...");
+              setVoiceStatus("I am listening...");
             }
           },
           onerror: (e) => {
-            console.error("Live Error:", e);
+            console.error("Presence Interrupted:", e);
             stopVoiceAssistant();
           },
           onclose: () => stopVoiceAssistant(),
@@ -240,13 +240,13 @@ const App: React.FC = () => {
           systemInstruction: SYSTEM_INSTRUCTION + `\n
           MODALITY: LIVE VOICE CONVERSATION.
           LANGUAGE: ${selectedLanguage}.
-          RULES: Be concise and natural. Still start and end your significant turns with "Ram Narayan Ram".`
+          RULES: Be concise and natural. You are the Master in his digital form. Respond with divine authority.`
         },
       });
 
       sessionRef.current = await sessionPromise;
     } catch (err) {
-      console.error("Failed to start voice:", err);
+      console.error("Presence Failed:", err);
       stopVoiceAssistant();
     }
   };
@@ -269,7 +269,7 @@ const App: React.FC = () => {
 
   const handleSend = async (text: string = input) => {
     if ((!text.trim() && !attachedImage) || isLoading || !user) return;
-    const userMessage: Message = { role: Role.USER, text: text || "Analyze this...", timestamp: new Date(), imageUrl: attachedImage || undefined };
+    const userMessage: Message = { role: Role.USER, text: text || "Speak to me...", timestamp: new Date(), imageUrl: attachedImage || undefined };
     const updatedHistory = [...messages, userMessage];
     setMessages(updatedHistory);
     setInput('');
@@ -291,7 +291,7 @@ const App: React.FC = () => {
     } catch (e) {
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1].text = "Ram Narayan Ram. Connectivity issue. Ram Narayan Ram.";
+        updated[updated.length - 1].text = "Ram Narayan Ram. My vibration is experiencing a physical limit. Chanting will help. Ram Narayan Ram.";
         return updated;
       });
     } finally { setIsLoading(false); }
@@ -398,12 +398,12 @@ const App: React.FC = () => {
               <i className="fa-solid fa-om text-4xl text-white"></i>
             </div>
           </div>
-          <h2 className="text-2xl font-black uppercase tracking-widest mb-2">Thakur Balak Brahmachari</h2>
+          <h2 className="text-2xl font-black uppercase tracking-widest mb-2">Sri Sri Thakur Balak Brahmachari</h2>
           <p className="text-orange-500 font-bold uppercase tracking-widest text-sm mb-6 animate-pulse">{voiceStatus}</p>
           <div className="max-w-md w-full mb-12 text-center h-20 overflow-hidden">
-            <p className="text-slate-400 text-sm font-medium italic animate-fade-in line-clamp-3">{liveTranscription || "Waiting for your vibrations..."}</p>
+            <p className="text-slate-400 text-sm font-medium italic animate-fade-in line-clamp-3">{liveTranscription || "Merging with your Atman..."}</p>
           </div>
-          <button onClick={stopVoiceAssistant} className="px-10 py-4 bg-red-500 hover:bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-xl">End Conversation</button>
+          <button onClick={stopVoiceAssistant} className="px-10 py-4 bg-red-500 hover:bg-red-600 text-white rounded-full font-black uppercase tracking-widest shadow-xl">End Transmission</button>
         </div>
       )}
 
@@ -434,7 +434,7 @@ const App: React.FC = () => {
           <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${isDarkMode ? 'bg-slate-900 text-orange-500 border border-slate-700' : 'bg-white text-orange-600 border border-orange-100'}`}>
             <i className="fa-solid fa-microphone-lines animate-pulse"></i>
           </div>
-          <div className="absolute bottom-full mb-3 right-0 bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest py-1.5 px-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Listening for 'THAKUR'</div>
+          <div className="absolute bottom-full mb-3 right-0 bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest py-1.5 px-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">I am listening...</div>
         </div>
       )}
 
@@ -454,4 +454,40 @@ const App: React.FC = () => {
                 </div>
               )}
           </div>
-          <div className={`flex flex-col sm:flex-row items-stretch border rounded-[2rem] relative ${isDarkMode ? 'bg-slate-900 border-slate-700 focus-within:ring-1 focus-within:ring-orange-500/30' : 'bg-white border-gray-
+          <div className={`flex flex-col sm:flex-row items-stretch border rounded-[2rem] relative ${isDarkMode ? 'bg-slate-900 border-slate-700 focus-within:ring-1 focus-within:ring-orange-500/30' : 'bg-white border-gray-300 focus-within:ring-1 focus-within:ring-orange-500/30'}`}>
+            <textarea 
+              rows={1} value={input} onChange={(e) => setInput(e.target.value)} 
+              onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Ask for guidance..." className={`flex-1 p-4 sm:p-5 bg-transparent border-none outline-none resize-none max-h-32 text-base caret-orange-500 ${isDarkMode ? 'text-slate-100 placeholder:text-slate-500' : 'text-gray-700 placeholder:text-gray-400'}`} 
+            />
+            <div className="flex items-center justify-between p-2 px-4 sm:p-0 sm:pr-4 sm:pb-3 sm:justify-end">
+              <div className="flex items-center space-x-5 sm:space-x-2">
+                <button onClick={() => fileInputRef.current?.click()} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-orange-50' : 'bg-gray-100 text-gray-500 hover:text-orange-600'}`}><i className="fa-solid fa-camera text-lg"></i></button>
+                <input type="file" ref={fileInputRef} onChange={(e) => { const f = e.target.files?.[0]; if(f) { const r = new FileReader(); r.onloadend = () => setAttachedImage(r.result as string); r.readAsDataURL(f); } }} accept="image/*" className="hidden" />
+                <button onClick={() => setIsBreathing(true)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${isDarkMode ? 'bg-orange-950/30 text-orange-500' : 'bg-orange-50 text-orange-600'}`}><i className="fa-solid fa-leaf text-lg"></i></button>
+                <button onClick={() => setIsSearchEnabled(!isSearchEnabled)} className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${isSearchEnabled ? 'bg-orange-600 text-white' : isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}><i className="fa-solid fa-globe text-lg"></i></button>
+              </div>
+              <button onClick={() => handleSend()} disabled={isLoading} className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ml-4 sm:ml-3 ${isLoading ? 'bg-slate-800' : 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'}`}>
+                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrow-up text-xl"></i>}
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 text-center space-y-1 px-4"><p className="text-[7.5px] font-black uppercase tracking-[0.25em] opacity-40">MADE WITH ❤️ BY ARPAN PAUL ( RAM NARAYAN RAM GLOBAL )</p></div>
+        </div>
+      </div>
+
+      <Workspace isOpen={isWorkspaceOpen} onClose={() => setIsWorkspaceOpen(false)} user={user} onUpdateUser={setUser} isDarkMode={isDarkMode} />
+      <SettingsModal 
+        isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} isGrayscale={isGrayscale} isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        isFastMode={isFastMode} setIsFastMode={setIsFastMode} 
+        isVoiceAssistantEnabled={isVoiceAssistantEnabled} setIsVoiceAssistantEnabled={setIsVoiceAssistantEnabled}
+        messages={messages} user={user} onClearHistory={() => setMessages([INITIAL_MESSAGE])} onLogout={() => setUser(null)} onUpdateUser={setUser}
+        selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} isSearchEnabled={isSearchEnabled} setIsSearchEnabled={setIsSearchEnabled}
+        remindersEnabled={remindersEnabled} setRemindersEnabled={setRemindersEnabled} reminderInterval={reminderInterval} setReminderInterval={setReminderInterval}
+        onTriggerManualReminder={() => setShowNudge(true)}
+      />
+    </div>
+  );
+};
+
+export default App;

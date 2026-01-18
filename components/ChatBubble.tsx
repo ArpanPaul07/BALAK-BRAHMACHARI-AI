@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Message, Role } from '../types';
 
@@ -41,7 +42,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isDarkMode }) => {
           </div>
 
           <div className="mt-2 flex items-center justify-between opacity-50 text-[10px] font-bold uppercase tracking-wider">
-            <span className="whitespace-nowrap">{isUser ? 'Santan' : 'THAKUR BALAK BRAHMACHARI AI'}</span>
+            <span className="whitespace-nowrap">{isUser ? 'Santan' : 'THAKUR BALAK BRAHMACHARI'}</span>
             <span className="ml-4 flex-shrink-0">{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </div>
